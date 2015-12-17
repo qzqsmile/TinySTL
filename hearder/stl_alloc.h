@@ -1,10 +1,42 @@
 #ifndef STL_ALLOC_H
 #define STL_ALLOC_H
 
+#define __NODE_ALLOCATOR_THREADS true
+
+#if 0  
+#   include <new>  
+#   define __THROW_BAD_ALLOC throw bad_alloc  
+#elif !defined(__THROW_BAD_ALLOC)//定义内存申请出错处理  
+#   include <iostream>  
+#   define __THROW_BAD_ALLOC std::cerr << "out of memory" << std::endl; exit(1) 
+#endif  
+
+template<class T, class Alloc>
+class simple_alloc{
+public:
+	static T *allocate(size_t n)
+	{
+		return 0 == n ? 0 : (T*)Alloc::allocate(n * sizeof(T));
+	}
+	static T *allocate(void)
+	{
+		return (T*) Alloc::allocate(sizeof(T));
+	}
+	static void deallocate(T *p, size_t n)	
+	{
+		if(0 != n)
+			Alloc::deallocate(p, n * sizeof(T));
+	}
+	static void deallocate(T *p)
+	{
+		Alloc::deallocate(p, sizeof(T));
+	}
+};
+
 template<int inst>
 class __malloc_alloc_template{
 private:
-	static void *oom_alloc(size_t);
+	static void *oom_malloc(size_t);
 	static void *oom_realloc(void *, size_t);
 	static void (* __malloc_alloc_oom_handler)();
 public:
@@ -63,7 +95,7 @@ void * __malloc_alloc_template<inst>::oom_realloc(void *p, size_t n)
 
 	for(;;){
 		my_malloc_handler = __malloc_alloc_oom_handler;
-		if(0 == my_malloc_handler) {__THROW_BAD_ALLOC;}
+		if(0 == my_malloc_handler) { __THROW_BAD_ALLOC;}
 		(*my_malloc_handler)();
 		result = realloc(p, n);
 		if(result) return (result);
@@ -78,7 +110,7 @@ enum {__MAX_BYTES = 128};
 enum {__NFREELISTS = __MAX_BYTES/__ALIGN};
 
 template <bool threads, int inst>
-class __default_alloc_teamplate{
+class __default_alloc_template{
 private:
 	static size_t ROUND_UP(size_t bytes){
 		return (((bytes)+__ALIGN-1)& ~(__ALIGN -1));
@@ -86,7 +118,7 @@ private:
 private:
 	union obj{
 		union obj *free_list_link;
-		char client_data[i];
+		char client_data[1];
 	};
 	static obj * volatile free_list[__NFREELISTS];
 	static size_t FREELIST_INDEX(size_t bytes){
@@ -96,13 +128,14 @@ private:
 	static void *refill(size_t n);
 
 	static char *chunk_alloc(size_t size, int &nobjs);
+
 	static char *start_free;
 	static char *end_free;
 	static size_t heap_size;
 
 public:
-	static void * allocate(size_t n){}
-	static void deallocate(void *p, size_t n){}
+	static void * allocate(size_t n);
+	static void deallocate(void *p, size_t n);
 	static void *reallocate(void *p, size_t old_sz, size_t new_sz);
 };
 
@@ -110,19 +143,19 @@ template<bool threads, int inst>
 char *__default_alloc_template<threads, inst>::start_free = 0;
 
 template<bool threads, int inst>
-char *__default_alloc_teamplate<threads, inst>::end_free = 0;
+char *__default_alloc_template<threads, inst>::end_free = 0;
 
 template<bool threads, int inst>
-size_t __default_alloc_teamplate<threads, inst>::heap_size = 0;
+size_t __default_alloc_template<threads, inst>::heap_size = 0;
 
 template<bool threads, int inst>
-__default_alloc_teamplate<threads, inst>::obj * volatile
-	__default_alloc_teamplate<threads, inst>::free_list[__NFREELISTS] = 
-	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+typename __default_alloc_template<threads, inst>::obj * volatile
+__default_alloc_template<threads, inst>::free_list[__NFREELISTS] = 
+	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,};
 
 
 template <bool threads, int inst>
-class __default_alloc_teamplate::static void *allocate(size_t n)
+void * __default_alloc_template<threads, inst>::allocate(size_t n)
 {
 	obj * volatile *my_free_list;
 	obj * result;
@@ -144,7 +177,7 @@ class __default_alloc_teamplate::static void *allocate(size_t n)
 }
 
 template<bool threads, int inst>
-class __default_alloc_teamplate::static void deallocate(void *p, size_t n)
+void __default_alloc_template<threads, inst>::deallocate(void *p, size_t n)
 {
 	obj *q = (obj *)p;
 	obj * volatile * my_free_list;
@@ -161,7 +194,7 @@ class __default_alloc_teamplate::static void deallocate(void *p, size_t n)
 
 
 template <bool threads, int inst>
-void * __default_alloc_teamplate<threads, inst>::refill(size_t n)
+void * __default_alloc_template<threads, inst>::refill(size_t n)
 {
 	int nobjs = 20;
 	
@@ -182,10 +215,10 @@ void * __default_alloc_teamplate<threads, inst>::refill(size_t n)
 		current_obj = next_obj;
 		next_obj = (obj *)((char *)next_obj + n);
 		if(nobjs - 1 == i){
-			*current_obj->free_list_link = 0;
+			current_obj->free_list_link = 0;
 			break;
 		}else{
-			*current_obj->free_list_link = next_obj;
+			current_obj->free_list_link = next_obj;
 		}
 	}
 
@@ -193,7 +226,7 @@ void * __default_alloc_teamplate<threads, inst>::refill(size_t n)
 }
 
 template <bool threads, int inst>
-char * __default_alloc_teamplate<threads, inst>::chunk_alloc(bool threads, int& nobjs)
+char * __default_alloc_template<threads, inst>::chunk_alloc(size_t size, int& nobjs)
 {
 	char * result;
 	size_t total_bytes = size * nobjs;
@@ -213,7 +246,7 @@ char * __default_alloc_teamplate<threads, inst>::chunk_alloc(bool threads, int& 
 		size_t bytes_to_get = 2 * total_bytes + ROUND_UP(heap_size >> 4);
 
 		if(bytes_left > 0){
-			obj * volatile * my_free_list = free_list + FREELIST_INDEX(byte_left);
+			obj * volatile * my_free_list = free_list + FREELIST_INDEX(bytes_left);
 			((obj *) start_free)->free_list_link = *my_free_list;
 			*my_free_list = (obj *)start_free;
 		}
@@ -245,93 +278,12 @@ char * __default_alloc_teamplate<threads, inst>::chunk_alloc(bool threads, int& 
 }
 
 
-template<class Forwarditerator, class Size, class T>
-inline ForwardIterator uninitialized_fill_n(ForwardIteartor frist, Size n, const T& x){
-	return uninitialized_fill_n(first, n, x, value_type(first));
-}
+#ifdef __USE_MALLOC
+	typedef __malloc_alloc_template<0> malloc_alloc;
+	typedef malloc_alloc alloc;
+#else
+	typedef __default_alloc_template<__NODE_ALLOCATOR_THREADS, 0> alloc;
+#endif
 
-template <class ForwardIterator, class Size, class T, class T1>
-inline ForwardIterator__uniitialized_fill_n(ForwardIterator first, Size n, const T&x, T1 *)
-{
-	typedef typename __type_traits<T1>::is_POD_type is_POD;
-	return __uninitialized_fill_n_aux(first, n, x, is_POD());
-}
-
-template<class ForwardIterator, class Size, class T>
-inline ForwardIterator
-	__uninitialized_fill_n_aux(ForwardIterator first, size n, const T&x, __true_type){
-	return fill_n(first, n, x);
-}
-
-
-template <class ForwardIterator, class Size, class T>
-ForwardIterator __uninitialized_fill_n_aux(ForwardIterator first, Size n, const T& x, __false_type){
-	for(;n > 0; --n, ++cur)
-		construct(&*cur, x);
-	return cur;
-}
-
-
-template <class InputIterator, class ForwardIterator>
-inline ForwardIterator uninitialized_copy(InputIterator first, InputIterator, last, ForwardIterator result){
-	return __uninitialized_copy(first, copy, value_type(result));
-}
-
-template<class InputIterator, class ForwardIterator, class T>
-inline ForwardIterator __uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result, T*){
-	typedef typename __type_traits<T>::is_POD_type is_POD;
-	return __uninitialized_copy_aut(first, last, result, is_POD());
-}
-
-template<class InputIterator, class ForwardIterator> 
-inline ForwardIterator __uninitialized_copy_aux(InputIterator first, InputIterator last, ForwardIterator result,__true_type){
-	return copy(first, last, result);
-}
-
-template<class InputIterator, class ForwardIterator>
-ForwardIterator
-	__uninitialized_copy_aux(InputIterator first, InputIterator last, ForwardIterator result, __false_type){
-		ForwardIterator cur = result;
-		for(; first != last; ++first, ++cur)
-			construct(&*cur, *first);
-		return cur;
-}
-
-inline char * uninitialized_copy(const char * first, const char * last, char *result){
-	memmove(result, first, last-first);
-	return result + (last-first);
-}
-
-inline wchar_t *uninitialized_copy(const wchar_t *first, const wchar_t *last, wchar_t* result){
-	memmove(result, first, sizeof(wchar_t)*(last-first));
-	return result + (last-first);
-}
-
-template<class ForwardIterator, class T>
-inline void uninitialized_fill(ForwardIterator first, ForwardIterator last,
-							   const T&x){
-								   uninitialized_fill(first, last, x, value_type(first));
-}
-
-
-template<class ForwardIterator, class T, class T1>
-inline void __uninitialized_fill(ForwardIterator first, ForwardIterator last, const T&x, T1 *){
-	typedef typename __type_traits<T1>::is_POD_type is_POD;
-	__uninitialized_fill_aux(first, last, x, is_POD());
-}
-
-template <class ForwardIterator, class T>
-inline void __uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T&x, __true_type)
-{
-	fill(first, last, x);
-}
-
-template<class ForwardIterator, class T>
-void __uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T &x, __false_type)
-{
-	ForwardIterator cur  = first;
-	for(;cur != last; ++cur)
-		construct(&*cur, x);
-}
 
 #endif

@@ -1,16 +1,23 @@
 #include<iostream>
 #include<algorithm>
 #include<typeinfo>
+#include"test.h"
 #include"vector.h"
+#include"list.h"
+#include"deque.h"
+#include"stack.h"
+#include"queue.h"
+#include"heap.h"
+#include"priority_queue.h"
+#include"slist.h"
 
 
 int main(void)
 {
-	vector<int> s;
-	s.push_back(1);
-	std::cout << s[0] << std::endl;
-	std::cout << s.size() << std::endl;
-	s.clear();
-	std::cout << s.size() << std::endl;
+	vectortest::vectortest();
+	listtest::listtest();
+	dequetest::dequetest();
+	queuetest::queuetest();
 	return 0;
 }
+

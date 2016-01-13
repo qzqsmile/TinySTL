@@ -17,7 +17,7 @@ struct __slist_node : public __slist_node_base
 inline __slist_node_base * __slist_make_link(
 	__slist_node_base* prev_node,
 		__slist_node_base* new_node){
-		new_node->next = new_node;
+		new_node->next = prev_node->next;
 		prev_node->next = new_node;
 		return new_node;
 }
@@ -72,14 +72,14 @@ struct __slist_iterator:public __slist_iterator_base
 
 	self& operator++()
 	{
-		incur();
+		incr();
 		return *this;
 	}
 
 	self& operator++(int)
 	{
 		self tmp = *this;
-		incur();
+		incr();
 		return tmp;
 	}
 };
@@ -115,8 +115,8 @@ private:
 		return node;
 	}
 
-	static void destory_node(list_node* node){
-		destory(&node->data);
+	static void destroy_node(list_node* node){
+		destroy(&node->data);
 		list_node_allocator::deallocate(node);
 	}
 private:
@@ -125,9 +125,16 @@ public:
 	slist() { head.next = 0;}
 	~slist() {clear();}
 
+	void clear(){
+		list_node *iter = (list_node *)head.next;
+		while(iter != 0){
+			destroy_node(iter);
+			iter = (list_node *)iter->next;
+		}
+	}
 	iterator begin() {return iterator((list_node*)head.next);}
 	iterator end() {return iterator(0);}
-	iterator size() const {return __slist_size(head.next);}
+	size_type size() const {return __slist_size(head.next);}
 	bool empty() const {return head.next == 0;}
 
 	void swap(slist& L)
@@ -135,6 +142,11 @@ public:
 		list_node_base *tmp = head.next;
 		head.next = L.head.next;
 		L.head.next = tmp;
+	}
+
+	iterator insert_after(iterator it, value_type value) {
+		 __slist_make_link(it.node,create_node(value));
+		 return ++it;
 	}
 
 public:
@@ -148,7 +160,7 @@ public:
 	{
 		list_node* node = (list_node *)head.next;
 		head.next = node->next;
-		destory_node(node);
+		destroy_node(node);
 	}
 };
 #endif

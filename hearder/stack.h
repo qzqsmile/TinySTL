@@ -2,6 +2,7 @@
 #define STACK_H
 
 #include"stl_config.h"
+#include"deque.h"
 
 template<class T, class Sequence = deque<T> >
 class stack{
@@ -15,7 +16,7 @@ public:
 protected:
 	Sequence c;
 public:
-	bool empty() const {return c.emtpy();}
+	bool empty() const{return c.empty();}
 	size_type size() const {return c.size();}
 	reference top() {return c.back();}
 	const_reference top() const {return c.back(); }

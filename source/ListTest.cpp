@@ -13,10 +13,6 @@ namespace listtest{
 		testcase3();
 		testcase4();
 		testcase5();
-		//	testcase6();
-		//	testcase7();
-		//	testcase8();
-		//	testcase9();
 		std::cout << "List test success!"<<std::endl;
 	}
 

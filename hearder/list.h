@@ -1,6 +1,10 @@
 #ifndef LIST_H
 #define LIST_H
 
+#include"stl_alloc.h"
+#include"stl_iterator.h"
+#include"memory.h"
+
 template<class T>
 struct __list_node{
 	typedef void *void_pointer;
@@ -60,9 +64,16 @@ struct __list_iterator{
 template<class T, class Alloc = alloc>
 class list{
 protected:
-	typedef __list_iterator<T, T&, T*> iterator;
 	typedef __list_node<T> list_node;
+public:
+	typedef list_node* link_type;
+protected:
+	typedef __list_iterator<T, T&, T*> iterator;
 	void transfer(iterator position, iterator first, iterator last);
+	void destroy_node(link_type p){
+		destroy(&p->data);
+		put_node(p);
+	}
 public:
 	list(){empty_initialize();}
 	void splice(iterator position, list&x);
@@ -76,7 +87,6 @@ public:
 	void unique();
 	void merge(list<T, Alloc>&x);
 	typedef T value_type;  
-	typedef list_node* link_type;
 	typedef value_type& reference;  
 	typedef size_t size_type;  
 
@@ -123,17 +133,12 @@ protected:
 		return p;
 	}
 
-	void destory_node(link_type p){
-		destory(&p->data);
-		put_node(p);
-	}
-
 	void empty_initialize(){
 		node = get_node();
 		node->next = node;
 		node->prev = node;
 	}
-
+public:
 	iterator insert(iterator position, const T& x){
 		link_type tmp = create_node(x);
 		tmp->next = position.node;
@@ -151,7 +156,7 @@ void list<T, Alloc>::clear()
 	while(cur != node){
 		link_type tmp = cur;
 		cur = (link_type) cur->next;
-		destory_node(tmp);
+		destroy_node(tmp);
 	}
 	node->next = node;
 	node->prev = node;

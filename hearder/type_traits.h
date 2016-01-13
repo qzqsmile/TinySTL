@@ -1,9 +1,7 @@
 #ifndef TYPE_TRAITS_H
 #define TYPE_TRAITS_H
 
-
 #include "stl_config.h"
-
 
 struct __true_type{};
 struct __false_type{};

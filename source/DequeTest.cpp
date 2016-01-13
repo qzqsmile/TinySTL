@@ -4,6 +4,8 @@
 #include"deque.h"
 #include"test.h"
 #include"dequetest.h"
+#include<algorithm>
+
 
 namespace dequetest
 {

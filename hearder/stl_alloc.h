@@ -134,7 +134,26 @@ private:
 	static size_t heap_size;
 
 public:
-	static void * allocate(size_t n);
+	static void *allocate(size_t n)
+	{
+		obj * volatile *my_free_list;
+		obj * result;
+
+		if(n > (size_t) __MAX_BYTES){
+			return (malloc_alloc::allocate(n));
+		}
+
+		my_free_list = free_list + FREELIST_INDEX(n);
+		result = *my_free_list;
+
+		if(result == 0){
+			void *r = refill(ROUND_UP(n));
+			return r;
+		}
+
+		*my_free_list = result->free_list_link;
+		return (result);
+	}
 	static void deallocate(void *p, size_t n);
 	static void *reallocate(void *p, size_t old_sz, size_t new_sz);
 };
@@ -150,31 +169,31 @@ size_t __default_alloc_template<threads, inst>::heap_size = 0;
 
 template<bool threads, int inst>
 typename __default_alloc_template<threads, inst>::obj * volatile
-__default_alloc_template<threads, inst>::free_list[__NFREELISTS] = 
-	{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,};
+	__default_alloc_template<threads, inst>::free_list[__NFREELISTS] = 
+{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,};
 
 
-template <bool threads, int inst>
-void * __default_alloc_template<threads, inst>::allocate(size_t n)
-{
-	obj * volatile *my_free_list;
-	obj * result;
-	
-	if(n > (size_t) __MAX_BYTES){
-		return (malloc_alloc::allocate(n));
-	}
+//template <bool threads, int inst>
+//void * __default_alloc_template<threads, inst>::allocate(size_t n)
+//{
+//	obj * volatile *my_free_list;
+//	obj * result;
 
-	my_free_list = free_list + FREELIST_INDEX(n);
-	result = *my_free_list;
+//	if(n > (size_t) __MAX_BYTES){
+//		return (malloc_alloc::allocate(n));
+//	}
 
-	if(result == 0){
-		void *r = refill(ROUND_UP(n));
-		return r;
-	}
+//	my_free_list = free_list + FREELIST_INDEX(n);
+//	result = *my_free_list;
 
-	*my_free_list = result->free_list_link;
-	return (result);
-}
+//	if(result == 0){
+//		void *r = refill(ROUND_UP(n));
+//		return r;
+//	}
+
+//	*my_free_list = result->free_list_link;
+//	return (result);
+//}
 
 template<bool threads, int inst>
 void __default_alloc_template<threads, inst>::deallocate(void *p, size_t n)
@@ -197,7 +216,7 @@ template <bool threads, int inst>
 void * __default_alloc_template<threads, inst>::refill(size_t n)
 {
 	int nobjs = 20;
-	
+
 	char * chunk = chunk_alloc(n, nobjs);
 	obj * volatile *my_free_list;
 	obj * result;
@@ -269,20 +288,20 @@ char * __default_alloc_template<threads, inst>::chunk_alloc(size_t size, int& no
 
 			end_free = 0;
 			start_free = (char *)malloc_alloc::allocate(bytes_to_get);
-			heap_size += bytes_to_get;
-			end_free = start_free + bytes_to_get;
-
-			return (chunk_alloc(size, nobjs));
 		}
+		heap_size += bytes_to_get;
+		end_free = start_free + bytes_to_get;
+
+		return (chunk_alloc(size, nobjs));
 	}
 }
 
 
 #ifdef __USE_MALLOC
-	typedef __malloc_alloc_template<0> malloc_alloc;
-	typedef malloc_alloc alloc;
+typedef __malloc_alloc_template<0> malloc_alloc;
+typedef malloc_alloc alloc;
 #else
-	typedef __default_alloc_template<__NODE_ALLOCATOR_THREADS, 0> alloc;
+typedef __default_alloc_template<__NODE_ALLOCATOR_THREADS, 0> alloc;
 #endif
 
 

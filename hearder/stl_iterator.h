@@ -12,7 +12,7 @@ template<class Category, class T, class Distance = ptrdiff_t,
 struct iterator{
 	typedef Category iterator_category;
 	typedef T value_type;
-	typedef Distance differece_type;
+	typedef Distance difference_type;
 	typedef Pointer pointer;
 	typedef Reference reference;
 };
@@ -21,7 +21,7 @@ template <class Iterator>
 struct iterator_traits {
 	typedef typename Iterator::iterator_category iterator_category;
 	typedef typename Iterator::value_type value_type;
-	typedef typename Iterator::defference_type difference_type;
+	typedef typename Iterator::difference_type difference_type;
 	typedef typename Iterator::pointer	pointer;
 	typedef typename Iterator::reference reference;
 };
@@ -60,7 +60,7 @@ inline typename iterator_traits<Iterator>::difference_type*
 template <class Iterator>
 inline typename iterator_traits<Iterator>::value_type*
 	value_type(const Iterator&){
-		return static_cast<typename iterator_traits<Iterator>::value_type *>(0);
+		return static_cast<typename iterator_traits<Iterator>::value_type*>(0);
 }
 
 template<class InputIterator, class Distance>

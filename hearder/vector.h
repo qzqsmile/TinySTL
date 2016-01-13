@@ -3,6 +3,7 @@
 
 #include"memory.h"
 #include"algorithm.h"
+#include"stl_algo.h"
 
 template<class T, class Alloc=alloc>
 class vector{
@@ -34,6 +35,14 @@ protected:
 
 public:
 	iterator begin() const {return start;}
+	void insert(iterator position, const T& x)
+	{
+		insert_aux(position, x);
+	}
+	void insert(iterator position, size_type n, const T& x)
+	{
+		insert_aux(position, n, x);
+	}
 	iterator end() const { return finish;}
 	size_type size() const { 
 		return size_type(end()-begin()); 
@@ -67,14 +76,14 @@ public:
 
 	void pop_back(){
 		--finish;
-		destory(finish);
+		destroy(finish);
 	}
 
 	iterator erase(iterator position){
 		if(position + 1 != end())
 			copy(position +1, finish, position);
 		--finish;
-		destory(finish);
+		destroy(finish);
 		return position;
 	}
 
@@ -147,7 +156,8 @@ void vector<T, Alloc>::insert_aux(iterator position, size_type n, const T& x)
 				fill(position, position+n, x_copy);
 			}
 		}else{
-			uninitialized_fill_n(finish, n - elems_after, x_copy);
+			
+			(finish, n - elems_after, x_copy);
 			finish += n - elems_after;
 			uninitialized_copy(position, old_finish, finish);
 			finish += elems_after;

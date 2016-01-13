@@ -1,6 +1,12 @@
 #ifndef DEQUE_H
 #define	DEQUE_H
 
+#include"memory.h"
+#include"stl_alloc.h"
+#include"stl_config.h"
+#include"algorithm.h"
+#include<algorithm>
+
 template<class T, class Ref, class Ptr, size_t BufSiz>
 struct __deque_iterator{
 	typedef __deque_iterator<T, T&, T*, BufSiz> iterator;
@@ -21,11 +27,6 @@ struct __deque_iterator{
 	T* first;
 	T* last;
 	map_pointer node;
-
-	inline size_t __deque_buf_size(size_t n, size_t sz)
-	{
-		return n != 0 ? n : (sz < 512 ? size_t(512 / sz): size_t(1));
-	}
 
 	void set_node(map_pointer new_node){
 		node = new_node;
@@ -108,28 +109,52 @@ struct __deque_iterator{
 
 };
 
+inline static size_t __deque_buf_size(size_t n, size_t sz)
+{
+	return n != 0 ? n : (sz < 512 ? size_t(512 / sz): size_t(1));
+}
+
 template <class T, class Alloc = alloc, size_t BufSiz = 0>
 class deque{
-protected:
+public:
 	typedef size_t size_type;
 	typedef T value_type;
 	typedef T& reference;
+	typedef const T& const_reference;
 	typedef __deque_iterator<T, T&, T*, BufSiz> iterator;
+	typedef __deque_iterator<T, const T&, const T*, BufSiz> const_iterator;
+
+	static size_type buffer_size()  
+    {  
+        return __deque_buf_size(BufSiz, sizeof(value_type));  
+    }  
+	void push_front_aux(const value_type& t);
 public:
+	void push_front(const value_type& t){
+		if(start.cur != start.first){
+			construct(start.cur-1,t);
+			--start.cur;
+		}
+		else 
+			push_front_aux(t);
+	}
+	deque() : start(), finish(), map(0), map_size(0)  
+    {  
+        create_map_and_nodes(0);  
+    }  
+
 	deque(int n, const value_type& value)
 		:start(), finish(), map(0), map_size(0)
 	{
 		fill_initialize(n, value);
 	}
-	
+
 	void fill_initialize(size_type n, const value_type& value);
 	void push_back(const value_type& t);
-	void push_back_aux(const value_type& t);
 	void reserve_map_at_back(size_type nodes_to_add = 1);
 	void reserve_map_at_front(size_type nodes_to_add = 1);
 	void reallocate_map(size_type nodes_to_add, bool add_at_front);
 	void create_map_and_nodes(size_type num_elements);
-	void push_front_aux(const value_type& t);
 	void pop_back();
 	void pop_back_aux();
 	void pop_front();
@@ -145,7 +170,7 @@ public:
 	typedef T value_type;
 	typedef value_type* pointer;
 protected:
-	typedef __deque_iterator<T, const T&, const T*, BufSiz> const_iterator;
+	void push_back_aux(const value_type& t);
 	typedef ptrdiff_t difference_type;
 	typedef pointer* map_pointer;
 	typedef simple_alloc<value_type, Alloc> data_allocator;
@@ -156,11 +181,21 @@ protected:
 	
 	map_pointer map;
 	size_type map_size;
+
+	pointer allocate_node() { return data_allocator::allocate(buffer_size()); }  
+	void deallocate_node(pointer n)  
+    {  
+        data_allocator::deallocate(n, buffer_size());  
+    }  
+
+	static size_type initial_map_size() { return 8; }  
+
 public:
-	iterator begin() {return start;}
-	iterator end(){return finish;}
+	iterator begin() const {return start;}
+	iterator end() const {return finish;}
+
 	reference operator[](size_type n){
-		return start[diefference_type(n)];
+		return start[difference_type(n)];
 	}
 	reference front(){return *start;}
 	reference back(){
@@ -172,7 +207,20 @@ public:
 
 	size_type max_size() const{return size_type(-1);}
 	bool empty() const{return finish == start;}
+
+	bool operator!=(const deque<T, Alloc, 0>& x) const {  
+		return size() != x.size() || !equal(begin(), end(), x.begin());  
+	}  
+	bool operator<(const deque<T, Alloc, 0>& x) const {  
+		return lexicographical_compare(begin(), end(), x.begin(), x.end());  
+	}  
 };
+
+template <class T, class Alloc, size_t BufSiz>  
+bool operator==(const deque<T, Alloc, BufSiz>& x, const deque<T, Alloc, BufSiz>& y){  
+	return (x.size() == y.size() && 
+		equal(x.begin(), x.end(), y.begin()));  
+} 
 
 template <class T, class Alloc, size_t BufSize>
 void deque<T,Alloc, BufSize>::fill_initialize(size_type n, const value_type& value)
@@ -181,16 +229,18 @@ void deque<T,Alloc, BufSize>::fill_initialize(size_type n, const value_type& val
 	map_pointer cur;
 	__STL_TRY{
 		for(cur = start.node; cur < finish.node; ++cur)
-			uninitialized_fill(finish.first, finish.cur, value);
+			uninitialized_fill(*cur, *cur+buffer_size(), value);
+		uninitialized_fill(finish.first, finish.cur, value);
 	}
 	catch(...){
-		...
+		//...
+		
 	}
 }
 
 template<class T, class Alloc, size_t BufSize>
 void deque<T, Alloc, BufSize>::create_map_and_nodes(size_type num_elements)
-{
+{                                                     
 	size_type num_nodes = num_elements / buffer_size() + 1;
 	map_size = max(initial_map_size(), num_nodes + 2);
 	map = map_allocator::allocate(map_size);
@@ -204,7 +254,7 @@ void deque<T, Alloc, BufSize>::create_map_and_nodes(size_type num_elements)
 			*cur = allocate_node();
 	}
 	catch(...){
-		...
+		//...
 	}
 	start.set_node(nstart);
 	finish.set_node(nfinish);
@@ -228,7 +278,7 @@ void deque<T, Alloc, BufSize>::push_back_aux(const value_type& t)
 {
 	value_type t_copy = t;
 	reserve_map_at_back();
-	*(finish.node+1) = allcoate_node();
+	*(finish.node+1) = allocate_node();
 	__STL_TRY{
 		construct(finish.cur, t_copy);
 		finish.set_node(finish.node + 1);
@@ -263,7 +313,7 @@ void deque<T, Alloc, BufSize>::reserve_map_at_back(size_type nodes_to_add = 1){
 
 template<class T, class Alloc, size_t BufSize>
 void deque<T, Alloc, BufSize>::reserve_map_at_front(size_type nodes_to_add = 1){
-	if(ndoes_to_add > start.node - map)
+	if(nodes_to_add > start.node - map)
 		reallocate_map(nodes_to_add, true);
 }
 
@@ -277,7 +327,7 @@ void deque<T, Alloc, BufSize>::reallocate_map(size_type nodes_to_add, bool add_a
 		new_nstart = map + (map_size - new_num_nodes) / 2 +
 			(add_at_front ? nodes_to_add : 0);
 		if(new_nstart < start.node)
-			copy(start.node, finish.node + 1, new_start)
+			copy(start.node, finish.node + 1, new_nstart);
 		else
 			copy_backward(start.node, finish.node + 1, new_nstart + old_num_nodes);
 	}
@@ -299,7 +349,7 @@ template<class T, class Alloc, size_t BufSize>
 void deque<T, Alloc, BufSize>::pop_back(){
 	if(finish.cur != finish.first){
 		--finish.cur;
-		destory(finish.cur);
+		destroy(finish.cur);
 	}
 	else
 		pop_back_aux();
@@ -310,13 +360,13 @@ void deque<T, Alloc, BufSize>::pop_back_aux(){
 	deallocate_node(finish.first);
 	finish.set_node(finish.node - 1);
 	finish.cur = finish.last - 1;
-	destory(finish.cur);
+	destroy(finish.cur);
 }
 
 template<class T, class Alloc, size_t BufSize>
 void deque<T, Alloc, BufSize>::pop_front(){
 	if(start.cur != start.last -1){
-		destory(start.cur);
+		destroy(start.cur);
 		++start.cur;
 	}
 	else
@@ -325,7 +375,7 @@ void deque<T, Alloc, BufSize>::pop_front(){
 
 template<class T, class Alloc, size_t BufSize>
 void deque<T, Alloc, BufSize>::pop_front_aux(){
-	destory(start.cur);
+	destroy(start.cur);
 
 	deallocate_node(start.first);
 	start.set_node(start.node + 1);
@@ -340,8 +390,8 @@ void deque<T, Alloc, BufSize>::clear(){
 	}
 
 	if(start.node != finish.node){
-		destory(start.cur, start.last);
-		destory(finish.first, finish.cur);
+		destroy(start.cur, start.last);
+		destroy(finish.first, finish.cur);
 		data_allocator::deallocate(finish.first, buffer_size());
 	}
 	else

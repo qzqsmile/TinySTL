@@ -36,7 +36,7 @@ namespace JJ{
 	}
 
 	template<class T>
-	inline void _destory(T* ptr){
+	inline void _destroy(T* ptr){
 		ptr->~T();
 	}
 
@@ -68,7 +68,7 @@ namespace JJ{
 			_construct(p,value);
 		}
 
-		void destroy(pointer p) { _destory(p);}
+		void destroy(pointer p) { _destroy(p);}
 		pointer address(reference x) {return (pointer)&x;}
 		
 		const_pointer const_address(const_reference x){

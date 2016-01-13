@@ -18,6 +18,10 @@ int main(void)
 	listtest::listtest();
 	dequetest::dequetest();
 	queuetest::queuetest();
+	stacktest::stacktest();
+	heaptest::heaptest();
+	slisttest::slisttest();
+
 	return 0;
 }
 

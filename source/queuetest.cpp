@@ -5,9 +5,6 @@
 #include"test.h"
 #include"queuetest.h"
 
-template<class T, class Sequence>
-bool operator==(const queue<T, Sequence>& x, const queue<T, Sequence>& y);
-
 namespace queuetest{
 	void queuetest()
 	{

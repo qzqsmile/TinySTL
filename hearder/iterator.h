@@ -1,12 +1,17 @@
 #ifndef ITERATOR_H
 #define ITERATOR_H
 
+#include"stl_iterator.h"
+#include"stl_function.h"
+#include<istream>
+#include<ostream>
+
 template<class Container>
 class back_insert_iterator{
 protected:
 	Container* container;
 public:
-	typedef ouput_iterator_tag iterator_category;
+	typedef struct ouput_iterator_tag iterator_category;
 	typedef void value_type;
 	typedef void difference_type;
 	typedef void pointer;
@@ -20,7 +25,7 @@ public:
 	}
 	back_insert_iterator<Container>& operator*() {return *this;}
 	back_insert_iterator<Container>& operator++() {return *this;}
-	back_insert_iterator<Contianer>& operator++(int) {return *this;}
+	back_insert_iterator<Container>& operator++(int) {return *this;}
 };
 
 template<class Container>
@@ -40,7 +45,8 @@ public:
 	typedef void	reference;
 	
 	explicit front_insert_iterator(Container& x): container(&x) {} 
-	operator=(const typename Container::value_type& value){
+	front_insert_iterator<Container>&
+		operator=(const typename Container::value_type& value){
 		container->push_front(value);
 		return *this;
 	}
@@ -78,7 +84,7 @@ public:
 	insert_iterator<Container>& operator*() {return *this;}
 	insert_iterator<Container>& operator++() {return *this;}
 	insert_iterator<Container>& operator++(int){return *this;}
-}
+};
 
 template<class Container, class Iterator>
 inline insert_iterator<Container> inserter(Container& x, Iterator i){
@@ -148,7 +154,7 @@ class istream_iterator{
 	friend bool operator==__STL_NULL_TMPL_ARGS(const istream_iterator<T, Distance>&x,
 												const istream_iterator<T, Distance>& y);
 protected:
-	istream* stream;
+	std::istream* stream;
 	T value;
 	bool end_marker;
 	void read(){
@@ -162,8 +168,8 @@ public:
 	typedef const T* pointer;
 	typedef const T& reference;
 
-	istream_iterator():stream(&cin), end_marker(false){}
-	istream_iterator(istream& s):stream(&s) {read();}
+	istream_iterator():std::istream(&cin), end_marker(false){}
+	istream_iterator(std::istream& s):stream(&s) {read();}
 
 	reference operator*() const{return value;}
 	pointer operator->() const {return &(operator*());}
@@ -177,12 +183,12 @@ public:
 		read();
 		return tmp;
 	}
-}
+};
 
 template<class T>
 class ostream_iterator{
 protected:
-	ostream* stream;
+	std::ostream* stream;
 	const char* string;
 public:
 	typedef output_iterator_tag iterator_category;
@@ -191,8 +197,8 @@ public:
 	typedef void pointer;
 	typedef void reference;
 
-	ostream_iterator(ostream& s):ostream(&s), string(0){}
-	ostream_iterator(ostream& s, const char *c):stream(&s), string(c) {}
+	ostream_iterator(std::ostream& s):stream(&s), string(0){}
+	ostream_iterator(std::ostream& s, const char *c):stream(&s), string(c) {}
 
 	ostream_iterator<T>& operator=(const T& value){
 		*stream << value;
@@ -202,8 +208,8 @@ public:
 
 	ostream_iterator<T>& operator*() {return *this;}
 	ostream_iterator<T>& operator++() {return *this;}
-	osteram_iterator<T>& operator++(int) {return *this;}
-}
+	ostream_iterator<T>& operator++(int) {return *this;}
+};
 
 template<class Predicate>
 class unary_negate:public unary_function<typename Predicate::argument_type, bool>{
@@ -264,16 +270,17 @@ inline binder1st<Operation> bind1st(const Operation& op, const T& x)
 }
 
 template<class Operation>
-class binder2nd{
-	typename Operation::result_type>{
+class binder2nd:public unary_function<typename Operation::first_argument_type,
+									  typename Operation::result_type>
+{
 protected:
 	Operation op;
-	typename Operation::first_argument_type value;
+	typename Operation::second_argument_type value;
 public:
-	binder1st(const Operation& x, const typename Operation::first_argument_type& y):op(x), value(y){}
+	binder2nd(const Operation& x, const typename Operation::second_argument_type& y):op(x), value(y){}
 
 	typename Operation::result_type
-		operator() (const typename Operation::second_argument_type& x) const{
+		operator() (const typename Operation::first_argument_type& x) const{
 		return op(x, value);
 	}
 };
@@ -281,8 +288,8 @@ public:
 template<class Operation, class T>
 inline binder2nd<Operation> bind2nd(const Operation& op, const T& x)
 {
-	typedef typename Operation::first_argument_type arg1_type;
-	return binder1st<Operation>(op, arg1_type(x));
+	typedef typename Operation::second_argument_type arg2_type;
+	return binder1st<Operation>(op, arg2_type(x));
 
 }
 
@@ -385,7 +392,7 @@ public:
 	S operator() (const T* p) const {return (p->*f)();}
 private:
 	S (T::*f)() const;
-}
+};
 
 template<class S, class T>
 inline const_mem_fun_t<S, T> mem_fun(S (T::*f)() const){
@@ -399,7 +406,7 @@ public:
 	S operator()(T& r) const {return (r.*f)()}
 private:
 	S (T::*f) ();
-}
+};
 
 template<class S, class T>
 inline mem_fun_ref_t<S, T> mem_fun_ref(S (T::*f)()){
@@ -413,7 +420,7 @@ public:
 	S operator() (const T& r) const {return (r.*f)()}
 private:
 	S (T::*f)() const;
-}
+};
 
 template<class S, class T>
 inline const_mem_fun_ref_t<S, T> mem_fun_ref(S (T::*f)() const){
@@ -438,9 +445,9 @@ template<class S, class T, class A>
 class const_mem_fun1_t: public binary_function<T*, A, S>{
 public:
 	explicit const_mem_fun1_t(S (T::*pf)(A) const):f(pf){}
-	S operator() (const T* p, A x) const {return  (p->*f)()}
+	S operator() (const T* p, A x) const {return  (p->*f)(); }
 private:
-	S (T::*f)*(A) const;
+	S (T::*f)(A) const;
 };
 
 template<class S, class T, class A>
@@ -469,10 +476,10 @@ public:
 	S operator() (const T& r, A x) const {return (r.*f)(x);}
 private:
 	S (T::*f)(A) const;
-}
+};
 
-template<class S, const T, class A>
-inline const_mem_fun1_ref_t<S,T,A> mem_fun1_ref(S (T::*f)(A) const){
+template<class S, class T, class A>
+inline const_mem_fun1_ref_t<S, T, A> mem_fun1_ref(S (T::*f)(A) const){
 	return const_mem_fun1_ref_t<S,T,A>(f);
 }
 

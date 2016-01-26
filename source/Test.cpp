@@ -2,14 +2,7 @@
 #include<algorithm>
 #include<typeinfo>
 #include"test.h"
-#include"vector.h"
-#include"list.h"
-#include"deque.h"
-#include"stack.h"
-#include"queue.h"
-#include"heap.h"
 #include"priority_queue.h"
-#include"slist.h"
 
 
 int main(void)
@@ -21,7 +14,18 @@ int main(void)
 	stacktest::stacktest();
 	heaptest::heaptest();
 	slisttest::slisttest();
-
+	rb_treetest::rb_treetest();
+	settest::settest();
+	settest::multisettest();
+	maptest::maptest();
+	maptest::multimaptest();
+	hashtabletest::hashtabletest();
+	hashtabletest::hashsettest();
+	hashtabletest::hash_multisettest();
+	hashtabletest::hashmaptest();
+	hashtabletest::hash_multimaptest();
+	algorithmtest::algorithmtest();
+//	rb_treetest::testcase1();
 	return 0;
 }
 

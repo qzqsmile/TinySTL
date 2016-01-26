@@ -5,7 +5,7 @@
 #include"stl_alloc.h"
 #include"stl_config.h"
 #include"algorithm.h"
-#include<algorithm>
+//#include<algorithm>
 
 template<class T, class Ref, class Ptr, size_t BufSiz>
 struct __deque_iterator{
@@ -219,7 +219,7 @@ public:
 template <class T, class Alloc, size_t BufSiz>  
 bool operator==(const deque<T, Alloc, BufSiz>& x, const deque<T, Alloc, BufSiz>& y){  
 	return (x.size() == y.size() && 
-		equal(x.begin(), x.end(), y.begin()));  
+		mystl::equal(x.begin(), x.end(), y.begin()));  
 } 
 
 template <class T, class Alloc, size_t BufSize>
@@ -242,7 +242,7 @@ template<class T, class Alloc, size_t BufSize>
 void deque<T, Alloc, BufSize>::create_map_and_nodes(size_type num_elements)
 {                                                     
 	size_type num_nodes = num_elements / buffer_size() + 1;
-	map_size = max(initial_map_size(), num_nodes + 2);
+	map_size = mystl::max(initial_map_size(), num_nodes + 2);
 	map = map_allocator::allocate(map_size);
 
 	map_pointer nstart = map + (map_size - num_nodes) / 2;
@@ -327,15 +327,15 @@ void deque<T, Alloc, BufSize>::reallocate_map(size_type nodes_to_add, bool add_a
 		new_nstart = map + (map_size - new_num_nodes) / 2 +
 			(add_at_front ? nodes_to_add : 0);
 		if(new_nstart < start.node)
-			copy(start.node, finish.node + 1, new_nstart);
+			mystl::copy(start.node, finish.node + 1, new_nstart);
 		else
-			copy_backward(start.node, finish.node + 1, new_nstart + old_num_nodes);
+			mystl::copy_backward(start.node, finish.node + 1, new_nstart + old_num_nodes);
 	}
 	else{
-		size_type new_map_size = map_size + max(map_size, nodes_to_add) + 2;
+		size_type new_map_size = map_size + mystl::max(map_size, nodes_to_add) + 2;
 		map_pointer new_map = map_allocator::allocate(new_map_size);
 		new_nstart = new_map + (new_map_size - new_num_nodes) / 2 + (add_at_front ? nodes_to_add : 0);
-		copy(start.node, finish.node + 1, new_nstart);
+		mystl::copy(start.node, finish.node + 1, new_nstart);
 		map_allocator::deallocate(map, map_size);
 		map = new_map;
 		map_size = new_map_size;
@@ -481,7 +481,7 @@ typename deque<T, Alloc, BufSize>::iterator
 		pos = start + index;
 		iterator pos1 = pos;
 		++pos1;
-		copy(front2, pos1, front1);
+		mystl::copy(front2, pos1, front1);
 	}
 	else{
 		push_back(back());
@@ -490,7 +490,7 @@ typename deque<T, Alloc, BufSize>::iterator
 		iterator back2 = back1;
 		--back2;
 		pos = start + index;
-		copy_backward(pos, back2, back1);
+		mystl::copy_backward(pos, back2, back1);
 	}
 	*pos = x_copy;
 	return pos;

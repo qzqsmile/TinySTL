@@ -12,8 +12,11 @@ public:
 	typedef value_type* pointer;
 	typedef value_type* iterator;
 	typedef value_type& reference;
+	typedef const value_type& const_reference;
 	typedef size_t size_type;
 	typedef ptrdiff_t difference_type;
+
+    const_reference operator[](size_type n) const { return *(begin() + n); }
 
 protected:
 	typedef simple_alloc<value_type, Alloc> data_allocator;
@@ -27,6 +30,18 @@ protected:
 			data_allocator::deallocate(start, end_of_storage-start);
 	}
 
+	template <class ForwardIterator>
+	iterator allocate_and_copy(size_type n,
+		ForwardIterator first, ForwardIterator last)
+	{
+		iterator result = data_allocator::allocate(n);
+		__STL_TRY {
+			uninitialized_copy(first, last, result);
+			return result;
+		}
+		__STL_UNWIND(data_allocator::deallocate(result, n));
+	}
+
 	void fill_initialize(size_type n, const T& value){
 		start = allocate_and_fill(n, value);
 		finish = start + n;
@@ -34,15 +49,31 @@ protected:
 	}
 
 public:
+   void swap(vector<T, Alloc>& x)
+   {
+     mystl::swap(start, x.start);
+     mystl::swap(finish, x.finish);
+     mystl::swap(end_of_storage, x.end_of_storage);
+   }
+ 
+	void reserve(size_type n)
+	{
+		if (capacity() < n) {
+			const size_type old_size = size();
+			iterator tmp = allocate_and_copy(n, start, finish);
+			destroy(start, finish);
+			deallocate();
+			start = tmp;
+			finish = tmp + old_size;
+			end_of_storage = start + n;
+		}
+	}
 	iterator begin() const {return start;}
 	void insert(iterator position, const T& x)
 	{
 		insert_aux(position, x);
 	}
-	void insert(iterator position, size_type n, const T& x)
-	{
-		insert_aux(position, n, x);
-	}
+	void insert(iterator position, size_type n, const T& x);
 	iterator end() const { return finish;}
 	size_type size() const { 
 		return size_type(end()-begin()); 
@@ -57,6 +88,32 @@ public:
 	vector(size_type n, const T& value){fill_initialize(n, value);}
 	vector(int n, const T& value) {fill_initialize(n,value);};
 	vector(long n, const T& value){fill_initialize(n, value);}
+	template<class InputIterator>
+	vector(InputIterator first, InputIterator last):
+		start(0), finish(0), end_of_storage(0)
+	{
+		range_initialize(first, last, iterator_category(first));
+	}
+
+	template<class InputIterator>
+	void range_initialize(InputIterator first, InputIterator last,
+		input_iterator_tag)
+	{
+		for(; first != last; ++first)
+			push_back(*first);
+	}
+
+	//	template <class ForwardIterator>
+	//    void range_initialize(ForwardIterator first, ForwardIterator last,
+	//                         forward_iterator_tag)
+	//    {
+	//      size_type n = 0;
+	//      distance(first, last, n);
+	//      start = allocate_and_copy(n, first, last);
+	//      finish = start + n;
+	//      end_of_storage = finish;
+	//    }
+
 	explicit vector(size_type n){fill_initialize(n, T());}
 
 	~vector() {
@@ -81,7 +138,7 @@ public:
 
 	iterator erase(iterator position){
 		if(position + 1 != end())
-			copy(position +1, finish, position);
+			mystl::copy(position +1, finish, position);
 		--finish;
 		destroy(finish);
 		return position;
@@ -113,7 +170,7 @@ void vector<T, Alloc>::insert_aux(iterator position, const T& x){
 		construct(finish, *(finish-1));
 		++finish;
 		T x_copy = x;
-		copy_backward(position, finish - 2, finish-1);
+		mystl::copy_backward(position, finish - 2, finish-1);
 		*position = x_copy;
 	}
 	else{
@@ -144,7 +201,7 @@ void vector<T, Alloc>::insert_aux(iterator position, const T& x){
 
 
 template <class T, class Alloc>
-void vector<T, Alloc>::insert_aux(iterator position, size_type n, const T& x)
+void vector<T, Alloc>::insert(iterator position, size_type n, const T& x)
 {
 	if(n != 0){
 		if(size_type(end_of_storage - finish) >= n){
@@ -152,53 +209,55 @@ void vector<T, Alloc>::insert_aux(iterator position, size_type n, const T& x)
 			const size_type elems_after = finish-position;
 			iterator old_finish = finish;
 			if(elems_after > n){
-				uninitialized_backward(position, old_finish - n, old_finish);
-				fill(position, position+n, x_copy);
+				uninitialized_copy(finish-n, finish, finish);
+				finish += n;
+				mystl::copy_backward(position, old_finish - n, old_finish);
+				mystl::fill(position, position+n, x_copy);
 			}
-		}else{
-			
-			(finish, n - elems_after, x_copy);
-			finish += n - elems_after;
-			uninitialized_copy(position, old_finish, finish);
-			finish += elems_after;
-			fill(position, old_finish, x_copy);
+			else{
+				uninitialized_fill_n(finish, n - elems_after, x_copy);
+				finish += n - elems_after;
+				uninitialized_copy(position, old_finish, finish);
+				finish += elems_after;
+				mystl::fill(position, old_finish, x_copy);
+			}
 		}
-	}
-	else{
-		const size_type old_size = size();
-		const size_type len = old_size + max(old_size, n);
+		else{
+			const size_type old_size = size();
+			const size_type len = old_size + mystl::max(old_size, n);
 
-		iterator new_start = data_allocator::allocate(len);
-		iterator new_finish = new_start;
+			iterator new_start = data_allocator::allocate(len);
+			iterator new_finish = new_start;
 
-		__STL_TRY{
-			new_finish = uninitialized_copy(start, position, new_start);
-			new_finish = uninitialized_fill_n(new_finish, n, x);
-			new_finish = uninitialized_copy(position, finish, new_finish);
-		}
+			__STL_TRY{
+				new_finish = uninitialized_copy(start, position, new_start);
+				new_finish = uninitialized_fill_n(new_finish, n, x);
+				new_finish = uninitialized_copy(position, finish, new_finish);
+			}
 #ifdef __STL_USE_EXCEPTIONS
-		catch(...){
-			destroy(new_start, new_finish);
-			data_allocator::deallocate(new_start, len);
-			throw;
-		}
+			catch(...){
+				destroy(new_start, new_finish);
+				data_allocator::deallocate(new_start, len);
+				throw;
+			}
 #endif // __STL_USE_EXCEPTIONS
-		destroy(start, finish);
-		deallocate();
+			destroy(start, finish);
+			deallocate();
 
-		start = new_start;
-		finish = new_finish;
-		end_of_storage = new_start + len;
+			start = new_start;
+			finish = new_finish;
+			end_of_storage = new_start + len;
+		}
 	}
 }
 
 template<class T, class Alloc>
 typename vector<T, Alloc>::iterator  
 	vector<T, Alloc>::erase(iterator first, iterator last){
-	iterator i = copy(last, finish, first);
-	destroy(i, finish);
-	finish = finish - (last - first);
-	return first;
+		iterator i = copy(last, finish, first);
+		destroy(i, finish);
+		finish = finish - (last - first);
+		return first;
 }
 
 #endif

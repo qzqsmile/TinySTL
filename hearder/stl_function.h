@@ -7,11 +7,6 @@ struct unary_function{
 	typedef Result result_type;
 };
 
-template<class T>
-struct negate : public unary_function<T, T>{
-	T operator() (const T& x) const {return -x;}
-};
-
 template<class Arg1, class Arg2, class Result>
 struct binary_function{
 	typedef Arg1 first_argument_type;
@@ -48,6 +43,18 @@ template<class T>
 struct negate: public unary_function<T, T>{
 	T operator() (const T& x) const {return -x;}
 };
+
+template<class T>
+inline 
+	T identity_element(plus<T>)
+{return T(0);}
+
+template<class T>
+inline 
+	T identity_element(multiplies<T>)
+{
+	return T(1);
+}
 
 template<class T>
 struct equal_to : public binary_function<T, T, bool>{
@@ -100,20 +107,20 @@ struct identity:public unary_function<T, T>{
 };
 
 template<class Pair>
+struct select2nd:public unary_function<Pair, typename Pair::second_type>
+{
+	const typename Pair::second_type& operator() (const Pair& x) const
+	{
+		return x.second;
+	}
+};
+
+template<class Pair>
 struct select1st:public unary_function<Pair, typename Pair::first_type>
 {
 	const typename Pair::first_type& operator() (const Pair& x) const
 	{
 		return x.first;
-	}
-};
-
-template<class Pair>
-struct select1st:public unary_function<Pair, typename Pair::second_type>
-{
-	const typename Pair::second_type& operator() (const Pair& x) const
-	{
-		return x.second;
 	}
 };
 

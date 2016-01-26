@@ -19,4 +19,6 @@
 #define __STL_UNWIND(action)
 #endif
 
+#define __STL_TEMPLATE_NULL template<>
+
 #endif

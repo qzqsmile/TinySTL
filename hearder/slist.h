@@ -107,11 +107,11 @@ private:
 
 	static list_node* create_node(const value_type& x){
 		list_node* node = list_node_allocator::allocate();
-		__STL_TRY{
+		//__STL_TRY{
 			construct(&node->data, x);
 			node->next = 0;
-		}
-		__STL_UNWIND(list_node_allocator::deallocate(node));
+		//}
+		//__STL_UNWIND(list_node_allocator::deallocate(node));
 		return node;
 	}
 
@@ -128,8 +128,9 @@ public:
 	void clear(){
 		list_node *iter = (list_node *)head.next;
 		while(iter != 0){
+			list_node *tmp = (list_node *)iter->next;
 			destroy_node(iter);
-			iter = (list_node *)iter->next;
+			iter = tmp;
 		}
 	}
 	iterator begin() {return iterator((list_node*)head.next);}

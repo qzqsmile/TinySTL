@@ -104,7 +104,6 @@ void * __malloc_alloc_template<inst>::oom_realloc(void *p, size_t n)
 
 typedef __malloc_alloc_template<0> malloc_alloc;
 
-
 enum {__ALIGN = 8};
 enum {__MAX_BYTES = 128};
 enum {__NFREELISTS = __MAX_BYTES/__ALIGN};
@@ -207,7 +206,7 @@ void __default_alloc_template<threads, inst>::deallocate(void *p, size_t n)
 	}
 
 	my_free_list = free_list + FREELIST_INDEX(n);
-	q->free_list_link = * my_free_list;
+	q->free_list_link = *my_free_list;
 	*my_free_list = q;
 } 
 

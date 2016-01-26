@@ -9,6 +9,11 @@
 #include"stacktest.h"
 #include"heaptest.h"
 #include"slisttest.h"
+#include"stl_treetest.h"
+#include"stl_settest.h"
+#include"stl_maptest.h"
+#include"stl_hashtabletest.h"
+#include"algorithmtest.h"
 
 namespace Test{
 	template<class Container1, class Container2>

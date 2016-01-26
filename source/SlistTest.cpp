@@ -18,10 +18,9 @@ namespace slisttest{
 		islist.push_front(4);
 		assert(islist.size()==5);
 		slist<int>::iterator ite;
-		ite = find(islist.begin(), islist.end(), 1);
+		ite = mystl::find(islist.begin(), islist.end(), 1);
 		if(ite != 0)
 			islist.insert_after(ite, 99);
-	
 		assert(islist.front() == 4);
 		islist.pop_front();
 		assert(islist.front() == 3);

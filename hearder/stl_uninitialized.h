@@ -20,7 +20,7 @@ inline ForwardIterator __uninitialized_fill_n(ForwardIterator first, Size n, con
 
 template<class ForwardIterator, class Size, class T>
 inline ForwardIterator __uninitialized_fill_n_aux(ForwardIterator first, Size n, const T&x, __true_type){
-	return fill_n(first, n, x);
+	return mystl::fill_n(first, n, x);
 }
 
 
@@ -45,7 +45,7 @@ inline ForwardIterator __uninitialized_copy(InputIterator first, InputIterator l
 
 template<class InputIterator, class ForwardIterator> 
 inline ForwardIterator __uninitialized_copy_aux(InputIterator first, InputIterator last, ForwardIterator result, __true_type){
-	return copy(first, last, result);
+	return mystl::copy(first, last, result);
 }
 
 template<class InputIterator, class ForwardIterator>
@@ -82,7 +82,7 @@ inline void __uninitialized_fill(ForwardIterator first, ForwardIterator last, co
 template <class ForwardIterator, class T>
 inline void __uninitialized_fill_aux(ForwardIterator first, ForwardIterator last, const T&x, __true_type)
 {
-	fill(first, last, x);
+	mystl::fill(first, last, x);
 }
 
 template<class ForwardIterator, class T>

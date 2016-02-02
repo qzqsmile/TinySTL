@@ -20,8 +20,8 @@ public:
 	explicit back_insert_iterator(Container& x):container(&x){}
 	back_insert_iterator<Container>&
 		operator=(const typename Container::value_type& value){
-		container->push_back(value);
-		return *this;
+			container->push_back(value);
+			return *this;
 	}
 	back_insert_iterator<Container>& operator*() {return *this;}
 	back_insert_iterator<Container>& operator++() {return *this;}
@@ -43,12 +43,12 @@ public:
 	typedef void	difference_type;
 	typedef void	pointer;
 	typedef void	reference;
-	
+
 	explicit front_insert_iterator(Container& x): container(&x) {} 
 	front_insert_iterator<Container>&
 		operator=(const typename Container::value_type& value){
-		container->push_front(value);
-		return *this;
+			container->push_front(value);
+			return *this;
 	}
 
 	front_insert_iterator<Container>& operator*() {return *this;}
@@ -76,9 +76,9 @@ public:
 	insert_iterator(Container& x, typename Container::iterator i):container(&x), iter(i){}
 	insert_iterator<Container>& 
 		operator=(const typename Container::value_type& value){
-		iter = container->insert(iter, value);
-		++iter;
-		return *this;
+			iter = container->insert(iter, value);
+			++iter;
+			return *this;
 	}
 
 	insert_iterator<Container>& operator*() {return *this;}
@@ -139,20 +139,46 @@ public:
 		current -= n;
 		return *this;
 	}
-	self& operator- (difference_type n) const{
-		return self(current + n);
-	}
+	
+	self operator-(difference_type n) const {
+     return self(current + n);
+    }
 
 	self& operator-=(difference_type n){
 		current += n;
 		return *this;
 	}
+
+	reference operator[] (difference_type n) const {return *(*this + n);}
 };
+
+  template <class Iterator>
+  inline typename reverse_iterator<Iterator>::difference_type
+  operator-(const reverse_iterator<Iterator>& x,
+            const reverse_iterator<Iterator>& y)
+  {
+    return y.base() - x.base();
+  }
+  
+
+template <class Iterator>
+inline bool operator==(const reverse_iterator<Iterator>& x,
+					   const reverse_iterator<Iterator>& y)
+{
+	return x.base() == y.base();
+}
+
+template<class Iterator>
+inline bool operator!=(const reverse_iterator<Iterator>& x,
+					   const reverse_iterator<Iterator>& y)
+{
+	return x.base() != y.base();
+}
 
 template<class T, class Distance = ptrdiff_t>
 class istream_iterator{
 	friend bool operator==__STL_NULL_TMPL_ARGS(const istream_iterator<T, Distance>&x,
-												const istream_iterator<T, Distance>& y);
+		const istream_iterator<T, Distance>& y);
 protected:
 	std::istream* stream;
 	T value;
@@ -229,15 +255,15 @@ inline unary_negate<Predicate> not1(const Predicate& pred){
 
 template<class Predicate>
 class binary_negate:public binary_function<typename Predicate::first_argument_type,
-											typename Predicate::second_argument_type,
-											bool>{
+	typename Predicate::second_argument_type,
+	bool>{
 protected:
 	Predicate pred;
 public:
 	explicit binary_negate(const Predicate& x):pred(x) {}
 	bool operator()(const typename Predicate::first_argument_type& x,
 		const typename Predicate::second_argument_type& y)const{
-		return !pred(x, y);
+			return !pred(x, y);
 	}
 };
 
@@ -258,7 +284,7 @@ public:
 
 	typename Operation::result_type
 		operator() (const typename Operation::second_argument_type& x) const{
-		return op(value, x);
+			return op(value, x);
 	}
 };
 
@@ -271,7 +297,7 @@ inline binder1st<Operation> bind1st(const Operation& op, const T& x)
 
 template<class Operation>
 class binder2nd:public unary_function<typename Operation::first_argument_type,
-									  typename Operation::result_type>
+	typename Operation::result_type>
 {
 protected:
 	Operation op;
@@ -281,7 +307,7 @@ public:
 
 	typename Operation::result_type
 		operator() (const typename Operation::first_argument_type& x) const{
-		return op(x, value);
+			return op(x, value);
 	}
 };
 
@@ -289,7 +315,7 @@ template<class Operation, class T>
 inline binder2nd<Operation> bind2nd(const Operation& op, const T& x)
 {
 	typedef typename Operation::second_argument_type arg2_type;
-	return binder1st<Operation>(op, arg2_type(x));
+	return binder2nd<Operation>(op, arg2_type(x));
 
 }
 
@@ -310,12 +336,12 @@ public:
 template<class Operation1, class Operation2>
 inline unary_compose<Operation1, Operation2>
 	compose1(const Operation1& op1, const Operation2& op2){
-	return unary_compose<Operation1, Operation2>(op1, op2);
+		return unary_compose<Operation1, Operation2>(op1, op2);
 }
 
 template<class Operation1, class Operation2, class Operation3>
 class binary_compose:public unary_function<typename Operation2::arugment_type,
-											typename Operation1::result_type>
+	typename Operation1::result_type>
 {
 protected:
 	Operation1 op1;
@@ -327,13 +353,13 @@ public:
 	typename Operation1::result_type
 		operator() (const typename Operation2::argument_type& x)const{
 			return op1(op2(x), op3(x));
-		}
+	}
 };
 
 template<class Operation1, class Operation2, class Operation3>
 inline binary_compose<Operation1, Operation2, Operation3>
 	compose2(const Operation1& op1, const Operation2& op2, const Operation3& op3){
-	return binary_compose<Operation1, Operation2, Operation3>(op1, op2, op3);
+		return binary_compose<Operation1, Operation2, Operation3>(op1, op2, op3);
 }
 
 template<class Arg, class Result>
@@ -368,7 +394,7 @@ public:
 template<class Arg1, class Arg2, class Result>
 inline pointer_to_binary_function<Arg1, Arg2, Result>
 	ptr_fun(Result(*x)(Arg1, Arg2)){
-	return pointer_to_binary_function<Arg1, Arg2, Result>(x);
+		return pointer_to_binary_function<Arg1, Arg2, Result>(x);
 }
 
 template <class S, class T>

@@ -315,7 +315,7 @@ public:
 	iterator begin() {return leftmost();}
 	const_iterator begin() const { return leftmost(); }
 	iterator end() {return header;}
-	const_iterator end() const {return rightmost();}
+	const_iterator end() const {return header;}
 	bool empty() const {return node_count == 0;}
 	size_type size() const {return node_count;}
 	size_type max_size() const {return size_type(-1);}

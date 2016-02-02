@@ -5,6 +5,8 @@
 #include"stl_iterator.h"
 #include<cstring>
 #include"pair.h"
+#include"heap.h"
+#include"iterator.h"
 
 
 namespace mystl{
@@ -401,8 +403,6 @@ namespace mystl{
 	{
 		while(first1 != last1 && first2 != last2)
 		{
-			if(*first1 != last1 && first2 != last2)
-			{
 				if(*first1 < *first2)
 				{
 					*result = *first1;
@@ -418,7 +418,6 @@ namespace mystl{
 					++first2;
 				}
 				++result;
-			}
 		}
 		return copy(first2, last2, copy(first1, last1, result));
 	}
@@ -440,8 +439,8 @@ namespace mystl{
 				++first2;
 				++result;
 			}
-			return result;
 		}
+		return result;
 	}
 
 	template <class InputIterator1, class InputIterator2, class OutputIterator>
@@ -491,8 +490,8 @@ namespace mystl{
 				++first1;
 				++first2;
 			}
-			return copy(first2, last2, copy(first1, last1, result));
 		}
+		return copy(first2, last2, copy(first1, last1, result));
 	}
 
 
@@ -576,7 +575,7 @@ namespace mystl{
 		typedef typename iterator_traits<ForwardIterator1>::iterator_category category1;
 		typedef typename iterator_traits<ForwardIterator2>::iterator_category category2;
 
-		return __find_end(frist1, last1, first2, last2, category1(), category2());
+		return __find_end(first1, last1, first2, last2, category1(), category2());
 	}
 
 	template<class ForwardIterator1, class ForwardIterator2>
@@ -631,7 +630,8 @@ namespace mystl{
 	{
 		for(;first1 != last1; ++first1)
 			for(ForwardIterator iter = first2; iter != last2; ++iter)
-				return first1;
+				if(*first1 == *iter)
+					return first1;
 		return last1;
 	}
 
@@ -990,7 +990,7 @@ namespace mystl{
 		ForwardIterator2 first2,
 		ForwardIterator2 last2)
 	{
-		return __search(first1, last1, first2, last2, distance_type(first1));
+		return __search(first1, last1, first2, last2, distance_type(first1), distance_type(first2));
 	}
 
 	template<class ForwardIterator1, class ForwardIterator2, class Distance1, class Distance2>
@@ -1000,7 +1000,7 @@ namespace mystl{
 	{
 		Distance1 d1 = 0;
 		distance(first1, last1, d1);
-		Distance d2 = 0;
+		Distance2 d2 = 0;
 		distance(first2, last2, d2);
 
 		if(d1 < d2) return last1;
@@ -1225,7 +1225,7 @@ namespace mystl{
 	ForwardIterator __upper_bound(ForwardIterator first, ForwardIterator last, const T& value,
 		Distance *, forward_iterator_tag)
 	{
-		Distance len;
+		Distance len = 0;
 		Distance half;
 		ForwardIterator middle;
 
@@ -1234,14 +1234,15 @@ namespace mystl{
 		while(len > 0)
 		{
 			half = len >> 1;
-			middle = first + half;
-			if(*middle > value){
+			middle = first;
+			advance(middle, half);
+			if(value < *middle)
+				len = half;
+			else{
 				first = middle;
-				first++;
+				++first;
 				len = len - half - 1;
 			}
-			else
-				len = half;
 		}
 		return first;
 	}
@@ -1259,7 +1260,7 @@ namespace mystl{
 		{
 			half = len >> 1;
 			middle = first + half;
-			if(*middle > value){
+			if(*middle <= value){
 				first = middle + 1;
 				len = len - half - 1;
 			}
@@ -1344,7 +1345,7 @@ namespace mystl{
 	template <class RandomAccessIterator>
 	inline void random_shuffle(RandomAccessIterator first, RandomAccessIterator last)
 	{
-		__random_shuffle(first, last, ditance_type(first));
+		__random_shuffle(first, last, distance_type(first));
 	}
 
 	template<class RandomAccessIterator, class Distance>
@@ -1372,18 +1373,18 @@ namespace mystl{
 	void __partial_sort(RandomAccessIterator first, RandomAccessIterator middle,
 		RandomAccessIterator last, T*)
 	{
-		make_heap(first, middle);
+		heapstl::make_heap(first, middle);
 		for(RandomAccessIterator i = middle; i < last; i++)
 			if(*i < *first)
-				__pop_heap(first, middle, i, T(*i), distance_type(first));
-		sort_heap(first, middle);
+				heapstl::__pop_heap(first, middle, i, T(*i), distance_type(first));
+		heapstl::sort_heap(first, middle);
 	}
 
 	template<class RandomAccessIterator>
 	void __insertion_sort(RandomAccessIterator first, RandomAccessIterator last)
 	{
 		if(first == last) return;
-		for(RandomAccessIterator i = first + i; i != last; i++)
+		for(RandomAccessIterator i = first + 1; i != last; i++)
 			__linear_insert(first, i, value_type(first));
 	}
 
@@ -1400,13 +1401,13 @@ namespace mystl{
 	}
 
 	template <class RandomAccessIterator, class T>
-	void __unguard_linear_insert(RandomAccessIterator last, T value)
+	void __unguarded_linear_insert(RandomAccessIterator last, T value)
 	{
 		RandomAccessIterator next = last;
 		--next;
 
 		while(value < *next){
-			*last = next;
+			*last = *next;
 			last = next;
 			--next;
 		}
@@ -1432,7 +1433,7 @@ namespace mystl{
 	}
 
 	template<class RandomAccessIterator, class T>
-	RandomAccessIterator __unguard_partition(RandomAccessIterator first, RandomAccessIterator last, T pivot){
+	RandomAccessIterator __unguarded_partition(RandomAccessIterator first, RandomAccessIterator last, T pivot){
 		while(true){
 			while(*first < pivot) ++first;
 			--last;
@@ -1450,6 +1451,7 @@ namespace mystl{
 			__final_insertion_sort(first, last);
 		}
 	}
+
 
 	template<class Size>
 	inline Size __lg(Size n){
@@ -1473,7 +1475,8 @@ namespace mystl{
 			}
 			--depth_limit;
 
-			RandomAccessIterator cut = __unguarded_partition(first, last, T(__median(*first, *(first))));
+			RandomAccessIterator cut = __unguarded_partition(first, last, T(__median(*first, *(first + (last-first)/2), 
+				*(last-1))));
 
 			__introsort_loop(cut, last, value_type(first), depth_limit);
 			last = cut;
@@ -1481,21 +1484,21 @@ namespace mystl{
 	}
 
 	template<class RandomAccessIterator>
-	void __finial_insertion_sort(RandomAccessIterator first, RandomAccessIterator last)
+	void __final_insertion_sort(RandomAccessIterator first, RandomAccessIterator last)
 	{
 		if(last-first > __stl_threshold)
 		{
 			__insertion_sort(first, first + __stl_threshold);
-			__unguraded_insertion_sort(first + __stl_threshold, last);
+			__unguarded_insertion_sort(first + __stl_threshold, last);
 		}
 		else
 			__insertion_sort(first, last);
 	}
 
 	template<class RandomAccessIterator>
-	inline void __unguard_insertion_sort(RandomAccessIterator first, RandomAccessIterator last)
+	inline void __unguarded_insertion_sort(RandomAccessIterator first, RandomAccessIterator last)
 	{
-		__unguard_insertion_sort_aux(first, last, value_type(first));
+		__unguarded_insertion_sort_aux(first, last, value_type(first));
 	}
 
 	template<class RandomAccessIterator, class T>
@@ -1675,7 +1678,7 @@ namespace mystl{
 	{
 		while(last - first > 3)
 		{
-			RandomAccessIterator out = __unguarded_partition(first, last,
+			RandomAccessIterator cut = __unguarded_partition(first, last,
 				T(__median(*first, *(first + (last-first)/2),*(last-1))));
 			if(cut <= nth)
 				first = cut;
